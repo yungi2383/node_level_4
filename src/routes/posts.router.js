@@ -16,16 +16,30 @@ const router = express.Router();
 router.post("/posts", authMiddleware, async (req, res, next) => {
   try {
     //authMiddleware 에서 담아온 user 정보에서 id만 추출, userId에 할당
-    const { nickname } = req.user;
+    const { userId } = req.user;
     const { title, content } = req.body;
 
-    const post = await prisma.posts.create({
+    if (!title) {
+      return res
+        .status(412)
+        .json({ errorMessage: "게시글 제목의 형식이 일치하지 않습니다." });
+    }
+    if (!content) {
+      return res
+        .status(412)
+        .json({ errorMessage: "게시글 내용의 형식이 일치하지 않습니다." });
+    }
+
+    await prisma.posts.create({
+      // 스키마에서 작성한 필수 값들 다 넣어야함!!!
       data: {
-        nickname,
+        // 스키마에 있는 거: 넣어줄 값
+        UserId: userId,
         title,
         content,
       },
     }); // * 이부분에 nickname 빼면 작성자 어떻게 구분? 빼긴 해야함, Request Header에서는 쿠키값 보내는데 이걸로 구분하낭?
+    // * -> ㄴㄴ 아니당 DB에 넣어줘야하는데, nickname이 아니라 UserId로 넣어줘야함!!
 
     return res.status(201).json({ message: "게시글 작성에 성공하였습니다." });
   } catch (err) {
@@ -40,18 +54,27 @@ router.post("/posts", authMiddleware, async (req, res, next) => {
 // 작성 날짜 기준으로 내림차순 정렬
 
 router.get("/posts", async (req, res, next) => {
-  const posts = await prisma.posts.findMany({
-    select: {
-      nickname: true,
-      title: true,
-      createdAt: true,
-    },
-    orderBy: {
-      createdAt: "desc", // 게시글을 최신순으로 정렬합니다.
-    },
-  });
-
-  return res.status(200).json({ data: posts });
+  try {
+    const posts = await prisma.posts.findMany({
+      // * 이부분 출력 모양 이상함, 이쁘게 출력하는 방법 알아오기!!
+      select: {
+        User: {
+          select: {
+            nickname: true,
+          },
+        },
+        title: true,
+        createdAt: true,
+      },
+      orderBy: {
+        createdAt: "desc", // 게시글을 최신순으로 정렬합니다.
+      },
+    });
+    return res.status(200).json({ data: posts });
+  } catch (err) {
+    next(err);
+    // return res.status(400).json({ message: "게시글 조회에 실패하였습니다." });
+  }
 });
 
 /** 게시글 상세 조회 API **/
@@ -64,7 +87,11 @@ router.get("/posts/:postId", async (req, res, next) => {
         postId: +postId,
       },
       select: {
-        nickname: true,
+        User: {
+          select: {
+            nickname: true,
+          },
+        },
         title: true,
         content: true,
         createdAt: true,
@@ -81,38 +108,101 @@ router.get("/posts/:postId", async (req, res, next) => {
 /** 게시글 수정 **/
 // * 토큰을 검사, 해당 사용자가 작성한 게시글만 수정 가능
 
-router.put('/:postId', authMiddleware, async (req, res, next ) => {
-    // 1. **Path Parameters**로 어떤 게시글을 수정할 지 `postId`를 전달받습니다.
+router.put("/posts/:postId", authMiddleware, async (req, res, next) => {
+  try {
+    const { userId } = req.user;
     const { postId } = req.params;
-    // 2. 변경할 `title`, `content`와 권한 검증을 위한 `password`를 **body**로 전달받습니다.
-    const { password, title, content} = req.body;
-    // 3. `postId`를 기준으로 게시글을 검색하고, 게시글이 존재하는지 확인합니다.
+    const { title, content } = req.body;
+
+    if (!title || !content) {
+      return res
+        .status(404)
+        .json({ errorMessage: "데이터 형식이 올바르지 않습니다." });
+    }
+
     const post = await prisma.posts.findUnique({
-        where: {postId: +postId}
+      // postId: +postId -> posts.postId: req.params
+      where: { postId: +postId }, // * 이렇게 하는 게 맞는 지 모르겠네;; 오류 나면 여기 다시 보자!
     });
-    // 4. 게시글이 조회되었다면 해당하는 게시글의 `password`가 일치하는지 확인합니다.
-    // 오류 검사 
-    if(!post){
-        return res.status(404).json({errorMessage : "게시글이 존재하지 않습니다." });
-    } else if(post.password !== password){
-        return res.status(401).json({ errorMessage: "비밀번호가 일치하지 않습니다."})
+
+    if (!post) {
+      return res
+        .status(404)
+        .json({ errorMessage: "게시글이 존재하지 않습니다." });
+    }
+
+    // * 이부분은 테스트 안해봤당! 다음에 테스트 해보쟈!! 근데 사실 오류 테스트는 거의 다 안해봄...
+    // * 그중에서도 얘는 좀 중요해보이니까 꼭 해보기!
+    if (userId !== post.UserId) {
+      return res
+        .status(404)
+        .json({ errorMessage: "게시글 수정의 권한이 존재하지 않습니다." });
     }
 
     // 5. 모든 조건을 통과하였다면 **게시글을 수정**합니다.
+    // * 여기서 await는 왜 또 들어가지ㅠㅠ 모르겠당, await는 어떨 때 들어가는 지 알아보쟈!!
     await prisma.posts.update({
-        data: {title, content},
-        where: {
-            postId: +postId, 
-            password
-        }
+      data: { title, content },
+      where: {
+        postId: +postId,
+      },
     });
-
-    return res.status(200).json({data : "게시글을 수정하였습니다."});
+    return res.status(200).json({ data: "게시글을 수정하였습니다." });
+  } catch (err) {
+    next(err);
+    // return res.status(400).json({ message: "게시글 수정에 실패하였습니다." });
+    // * 에러처리 부분 잘 모르겠음ㅠㅠ, catch() 괄호 안 err 의미, next(err)로 넘어갔을 때 각각 다른 메세지 나올 수 있게 하는 방법 알아보기!!
+  }
 });
-
-
 
 /** 게시글 삭제 **/
 // * 토큰을 검사하여, 해당 사용자가 작성한 게시글만 삭제 가능
+/**
+ * userId -> 쿠키에서 받아오기
+ * postId -> 파람스에서 받아오기
+ * postId -> findUnique로 posts테이블에서 데이터 찾기
+ * 게시글 없으면? 게시글이 존재하지 않습니다.
+ * 작성자 = 삭제자 동일하지 않으면? 게시글의 삭제 권한이 존재하지 않습니다.
+ *
+ */
+
+router.delete("/posts/:postId", authMiddleware, async (req, res, next) => {
+  try {
+    const { userId } = req.user;
+    const { postId } = req.params;
+
+    const post = await prisma.posts.findUnique({
+      // postId: +postId -> posts.postId: req.params
+      where: { postId: +postId },
+    });
+
+    if (!post) {
+      return res
+        .status(404)
+        .json({ errorMessage: "게시글이 존재하지 않습니다." });
+    }
+
+    // * 이부분은 테스트 안해봤당! 다음에 테스트 해보쟈!! 근데 사실 오류 테스트는 거의 다 안해봄...
+    // * 그중에서도 얘는 좀 중요해보이니까 꼭 해보기!
+    if (userId !== post.UserId) {
+      return res
+        .status(404)
+        .json({ errorMessage: "게시글 삭제 권한이 존재하지 않습니다." });
+    }
+
+    // 5. 모든 조건을 통과하였다면 **게시글을 수정**합니다.
+    // * 여기서 await는 왜 또 들어가지ㅠㅠ 모르겠당, await는 어떨 때 들어가는 지 알아보쟈!!
+    await prisma.posts.delete({
+      where: {
+        postId: +postId,
+      },
+    });
+    return res.status(200).json({ data: "게시글을 삭제하였습니다." });
+  } catch (err) {
+    next(err);
+    // return res.status(400).json({ message: "게시글 삭제에 실패하였습니다." });
+    // * 에러처리 부분 잘 모르겠음ㅠㅠ, catch() 괄호 안 err 의미, next(err)로 넘어갔을 때 각각 다른 메세지 나올 수 있게 하는 방법 알아보기!!
+  }
+});
 
 export default router;
