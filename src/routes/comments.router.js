@@ -7,9 +7,9 @@ import { prisma } from "../utils/prisma/index.js";
 const router = express.Router();
 
 /** 댓글 생성 API **/
-// * 로그인 토큰을 검사하여, 유효한 토큰일 경우에만 댓글 작성 가능
-// * 댓글 내용을 비워둔 채 댓글 작성 API 호출하면 "댓글 내용을 입력해주세요" 라는 메세지 return
-// * 댓글 내용을 입력하고 댓글 작성 API 호출한 경우 작성한 댓글을 추가하기
+// 로그인 토큰을 검사하여, 유효한 토큰일 경우에만 댓글 작성 가능
+// 댓글 내용을 비워둔 채 댓글 작성 API 호출하면 "댓글 내용을 입력해주세요" 라는 메세지 return
+// 댓글 내용을 입력하고 댓글 작성 API 호출한 경우 작성한 댓글을 추가하기
 
 /**
  * postId -> 파람이
@@ -29,7 +29,7 @@ router.post(
       const { userId } = req.user;
       const { content } = req.body;
 
-      const post = await prisma.posts.findFirst({
+      const post = await prisma.posts.findUnique({
         where: {
           postId: +postId,
         },
@@ -57,8 +57,8 @@ router.post(
 );
 
 /** 댓글 조회 API **/
-// * 조회하는 게시글에 작성된 모든 댓글을 목록 형식으로 볼 수 있도록 하기
-// * 작성 날짜 기준으로 내림차순 정렬
+// 조회하는 게시글에 작성된 모든 댓글을 목록 형식으로 볼 수 있도록 하기
+// 작성 날짜 기준으로 내림차순 정렬
 
 router.get("/posts/:postId/comments", async (req, res, next) => {
   try {
@@ -98,9 +98,9 @@ router.get("/posts/:postId/comments", async (req, res, next) => {
 });
 
 /** 댓글 수정 **/
-// * 로그인 토큰을 검사하여, 해당 사용자가 작성한 댓글만 수정 가능
-// * 댓글 내용을 비워둔 채 댓글 수정 API를 호출하면 "댓글 내용을 입력해주세요" 라는 메세지 return
-// * 댓글 내용을 입력하고 댓글 수정 API를 호출한 경우 작성한 댓글을 수정하기
+// 로그인 토큰을 검사하여, 해당 사용자가 작성한 댓글만 수정 가능
+// 댓글 내용을 비워둔 채 댓글 수정 API를 호출하면 "댓글 내용을 입력해주세요" 라는 메세지 return
+// 댓글 내용을 입력하고 댓글 수정 API를 호출한 경우 작성한 댓글을 수정하기
 
 /**
  * userId -> req.user
@@ -113,44 +113,44 @@ router.get("/posts/:postId/comments", async (req, res, next) => {
  * 댓글 수정 실패 시 "댓글 수정에 실패하였습니다."
  */
 
-router.put("/posts/:postId/comments/:commentId", authMiddleware, async (req, res, next) => {
+router.put(
+  "/posts/:postId/comments/:commentId",
+  authMiddleware,
+  async (req, res, next) => {
     try {
       const { userId } = req.user;
       const { postId, commentId } = req.params;
       const { content } = req.body;
-  
+
       if (!content) {
         return res
           .status(404)
           .json({ errorMessage: "데이터 형식이 올바르지 않습니다." });
       }
-  
+
       const post = await prisma.posts.findUnique({
         // postId: +postId -> posts.postId: req.params
         where: { postId: +postId },
       });
-  
+
       if (!post) {
         return res
           .status(404)
           .json({ errorMessage: "게시글이 존재하지 않습니다." });
       }
-      console.log(commentId)
+      console.log(commentId);
       const comment = await prisma.comments.findUnique({
         // postId: +postId -> posts.postId: req.params
         where: { commentId: +commentId },
       });
-      console.log(commentId)
-  
-      // * 이부분은 테스트 안해봤당! 다음에 테스트 해보쟈!! 근데 사실 오류 테스트는 거의 다 안해봄...
-      // * 그중에서도 얘는 좀 중요해보이니까 꼭 해보기!
-      
+      console.log(commentId);
+
       if (!comment) {
         return res
           .status(404)
           .json({ errorMessage: "댓글이 존재하지 않습니다." });
       }
-      
+
       if (userId !== comment.UserId) {
         return res
           .status(404)
@@ -170,15 +170,13 @@ router.put("/posts/:postId/comments/:commentId", authMiddleware, async (req, res
       // return res.status(400).json({ message: "댓글 수정에 실패하였습니다." });
       // * 에러처리 부분 잘 모르겠음ㅠㅠ, catch() 괄호 안 err 의미, next(err)로 넘어갔을 때 각각 다른 메세지 나올 수 있게 하는 방법 알아보기!!
     }
-  });
-
-
-
+  }
+);
 
 /** 댓글 삭제 **/
-// * 로그인 토큰을 검사하여, 해당 사용자가 작성한 댓글만 삭제 가능
-// * 원하는 댓글을 삭제하기
-// * API 명세서에 댓글 삭제에 실패한 경우 / 예외 케이스에서 처리하지 못한 에러 차이를 잘 모르겠당
+// 로그인 토큰을 검사하여, 해당 사용자가 작성한 댓글만 삭제 가능
+// 원하는 댓글을 삭제하기
+// API 명세서에 댓글 삭제에 실패한 경우 / 예외 케이스에서 처리하지 못한 에러 차이를 잘 모르겠당
 /**
  * userId -> req.user
  * postId, commentId -> req.params
@@ -211,14 +209,12 @@ router.delete(
         where: { commentId: +commentId },
       });
 
-      // * 이부분은 테스트 안해봤당! 다음에 테스트 해보쟈!! 근데 사실 오류 테스트는 거의 다 안해봄...
-      // * 그중에서도 얘는 좀 중요해보이니까 꼭 해보기!
       if (userId !== comment.UserId) {
         return res
           .status(404)
           .json({ errorMessage: "댓글의 삭제 권한이 존재하지 않습니다." });
       }
-      
+
       if (!comment) {
         return res
           .status(404)

@@ -7,8 +7,8 @@ import authMiddleware from "../middlewares/auth.middleware.js";
 const router = express.Router();
 
 /** 게시글 생성 API **/
-// * 토큰을 검사하여 유효한 토큰일 경우에만 게시글 작성 가능
-// * 제목, 작성 내용을 입력
+// 토큰을 검사하여 유효한 토큰일 경우에만 게시글 작성 가능
+// 제목, 작성 내용을 입력
 
 // 1. 게시글을 작성하려는 클라이언트가 로그인된 사용자인지 검증합니다. (authMiddleware)
 // auth.middleware.js 에서 한 일: req.cookies 에 저장된 유저 id와 일치하는 user 정보를 {user}에 담았당
@@ -38,7 +38,8 @@ router.post("/posts", authMiddleware, async (req, res, next) => {
         title,
         content,
       },
-    }); // * 이부분에 nickname 빼면 작성자 어떻게 구분? 빼긴 해야함, Request Header에서는 쿠키값 보내는데 이걸로 구분하낭?
+    }); 
+    // * 이부분에 nickname 빼면 작성자 어떻게 구분? 빼긴 해야함, Request Header에서는 쿠키값 보내는데 이걸로 구분하낭?
     // * -> ㄴㄴ 아니당 DB에 넣어줘야하는데, nickname이 아니라 UserId로 넣어줘야함!!
 
     return res.status(201).json({ message: "게시글 작성에 성공하였습니다." });
@@ -78,7 +79,7 @@ router.get("/posts", async (req, res, next) => {
 });
 
 /** 게시글 상세 조회 API **/
-// * 제목, 작성자명, 작성날짜, 작성 내용 조회
+// 제목, 작성자명, 작성날짜, 작성 내용 조회
 router.get("/posts/:postId", async (req, res, next) => {
   try {
     const { postId } = req.params;
@@ -100,13 +101,14 @@ router.get("/posts/:postId", async (req, res, next) => {
     return res.status(200).json({ data: post });
   } catch (err) {
     next(err);
+    // err.message
     // return res.status(400).json({ message: "게시글 조회에 실패하였습니다." });
     // * 에러처리 부분 잘 모르겠음ㅠㅠ, catch() 괄호 안 err 의미, next(err)로 넘어갔을 때 각각 다른 메세지 나올 수 있게 하는 방법 알아보기!!
   }
 });
 
 /** 게시글 수정 **/
-// * 토큰을 검사, 해당 사용자가 작성한 게시글만 수정 가능
+// 토큰을 검사, 해당 사용자가 작성한 게시글만 수정 가능
 
 router.put("/posts/:postId", authMiddleware, async (req, res, next) => {
   try {
@@ -122,7 +124,7 @@ router.put("/posts/:postId", authMiddleware, async (req, res, next) => {
 
     const post = await prisma.posts.findUnique({
       // postId: +postId -> posts.postId: req.params
-      where: { postId: +postId }, // * 이렇게 하는 게 맞는 지 모르겠네;; 오류 나면 여기 다시 보자!
+      where: { postId: +postId },
     });
 
     if (!post) {
@@ -131,8 +133,6 @@ router.put("/posts/:postId", authMiddleware, async (req, res, next) => {
         .json({ errorMessage: "게시글이 존재하지 않습니다." });
     }
 
-    // * 이부분은 테스트 안해봤당! 다음에 테스트 해보쟈!! 근데 사실 오류 테스트는 거의 다 안해봄...
-    // * 그중에서도 얘는 좀 중요해보이니까 꼭 해보기!
     if (userId !== post.UserId) {
       return res
         .status(404)
@@ -156,7 +156,7 @@ router.put("/posts/:postId", authMiddleware, async (req, res, next) => {
 });
 
 /** 게시글 삭제 **/
-// * 토큰을 검사하여, 해당 사용자가 작성한 게시글만 삭제 가능
+//  토큰을 검사하여, 해당 사용자가 작성한 게시글만 삭제 가능
 /**
  * userId -> 쿠키에서 받아오기
  * postId -> 파람스에서 받아오기
@@ -182,8 +182,6 @@ router.delete("/posts/:postId", authMiddleware, async (req, res, next) => {
         .json({ errorMessage: "게시글이 존재하지 않습니다." });
     }
 
-    // * 이부분은 테스트 안해봤당! 다음에 테스트 해보쟈!! 근데 사실 오류 테스트는 거의 다 안해봄...
-    // * 그중에서도 얘는 좀 중요해보이니까 꼭 해보기!
     if (userId !== post.UserId) {
       return res
         .status(404)
