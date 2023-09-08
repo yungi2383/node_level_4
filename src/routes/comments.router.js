@@ -5,7 +5,7 @@ import { prisma } from "../utils/prisma/index.js";
 const router = express.Router();
 
 /** 댓글 생성 API **/
-// * 로그인 토큰을 검사하여, 유효한 토큰일 경우에만 댁슬 작성 가능
+// * 로그인 토큰을 검사하여, 유효한 토큰일 경우에만 댓글 작성 가능
 // * 댓글 내용을 비워둔 채 댓글 작성 API 호출하면 "댓글 내용을 입력해주세요" 라는 메세지 return
 // * 댓글 내용을 입력하고 댓글 작성 API 호출한 경우 작성한 댓글을 추가하기
 
