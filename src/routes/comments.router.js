@@ -113,7 +113,7 @@ router.get("/posts/:postId/comments", async (req, res, next) => {
  * 댓글 수정 실패 시 "댓글 수정에 실패하였습니다."
  */
 
-router.put("/posts/:postId/comments/:comments", authMiddleware, async (req, res, next) => {
+router.put("/posts/:postId/comments/:commentId", authMiddleware, async (req, res, next) => {
     try {
       const { userId } = req.user;
       const { postId, commentId } = req.params;
