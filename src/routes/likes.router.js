@@ -4,7 +4,7 @@ import authMiddleware from "../middlewares/auth.middleware.js";
 
 const router = express.Router();
 
-// 좋아요 업데이트
+// 좋아요 등록, 취소
 router.put("/posts/:postId/like", authMiddleware, async (req, res) => {
     try {
       const { postId } = req.params;
