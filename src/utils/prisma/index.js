@@ -1,6 +1,7 @@
 // src/utils/prisma/index.js
 
 import { PrismaClient } from '@prisma/client';
+import express from "express";
 
 export const prisma = new PrismaClient({
   // Prisma를 이용해 데이터베이스를 접근할 때, SQL을 출력해줍니다.

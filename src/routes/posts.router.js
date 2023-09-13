@@ -38,7 +38,7 @@ router.post("/posts", authMiddleware, async (req, res, next) => {
         title,
         content,
       },
-    }); 
+    });
     // * 이부분에 nickname 빼면 작성자 어떻게 구분? 빼긴 해야함, Request Header에서는 쿠키값 보내는데 이걸로 구분하낭?
     // * -> ㄴㄴ 아니당 DB에 넣어줘야하는데, nickname이 아니라 UserId로 넣어줘야함!!
 
@@ -66,7 +66,13 @@ router.get("/posts", async (req, res, next) => {
         },
         title: true,
         createdAt: true,
+        _count: {
+          select: {
+            Like: true,
+          },
+        },
       },
+      
       orderBy: {
         createdAt: "desc", // 게시글을 최신순으로 정렬합니다.
       },

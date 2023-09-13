@@ -97,7 +97,7 @@ router.post("/login", async (req, res, next) => {
       {
         userId: user.userId,
       },
-      "customized_secret_key" // 비밀키, dotenv를 이용해서, 외부에서 코드를 보더라도, 알 수 없도록 구현해야함 (지금은 평문 사용)
+      process.env.KEY// 비밀키, dotenv를 이용해서, 외부에서 코드를 보더라도, 알 수 없도록 구현해야함 (지금은 평문 사용)
     );
 
     // authotization 쿠키에 Berer 토큰 형식으로 JWT를 저장합니다.

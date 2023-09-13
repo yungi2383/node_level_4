@@ -29,7 +29,7 @@ export default async function (req, res, next) {
       throw new Error("토큰 타입이 일치하지 않습니다.");
 
     // 3. 서버에서 발급한 JWT가 맞는지 검증
-    const decodedToken = jwt.verify(token, "customized_secret_key");
+    const decodedToken = jwt.verify(token, process.env.KEY);
     const userId = decodedToken.userId;
 
     // 4. JWT의 'userId'를 이용해 사용자를 조회
